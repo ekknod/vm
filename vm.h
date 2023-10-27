@@ -80,6 +80,32 @@ typedef unsigned __int64 QWORD;
 #endif
 
 
+namespace utils
+{
+	inline BOOL bDataCompare(const BYTE* pData, const BYTE* bPattern, const char* szMask)
+	{
+
+		for (; *szMask; ++szMask, ++pData, ++bPattern)
+			if (*szMask == 'x' && *pData != *bPattern)
+				return 0;
+
+		return (*szMask) == 0;
+	}
+
+	inline QWORD FindPatternEx(QWORD dwAddress, QWORD dwLen, BYTE* bPattern, char* szMask)
+	{
+
+		if (dwLen <= 0)
+			return 0;
+		for (QWORD i = 0; i < dwLen; i++)
+			if (bDataCompare((BYTE*)(dwAddress + i), bPattern, szMask))
+				return (QWORD)(dwAddress + i);
+
+		return 0;
+	}
+}
+
+
 typedef void* vm_handle;
 enum class VM_MODULE_TYPE {
 	Full = 1,

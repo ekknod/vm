@@ -161,31 +161,6 @@ namespace vmlinux
 	#endif
 	}
 
-	namespace utils
-	{
-		inline BOOL bDataCompare(const BYTE* pData, const BYTE* bMask, const char* szMask)
-		{
-
-			for (; *szMask; ++szMask, ++pData, ++bMask)
-				if (*szMask == 'x' && *pData != *bMask)
-					return 0;
-
-			return (*szMask) == 0;
-		}
-
-		inline QWORD FindPatternEx(QWORD dwAddress, QWORD dwLen, BYTE* bMask, char* szMask)
-		{
-
-			if (dwLen <= 0)
-				return 0;
-			for (QWORD i = 0; i < dwLen; i++)
-				if (bDataCompare((BYTE*)(dwAddress + i), bMask, szMask))
-					return (QWORD)(dwAddress + i);
-
-			return 0;
-		}
-	}
-
 	inline QWORD scan_pattern(PVOID dumped_module, PCSTR pattern, PCSTR mask, QWORD length)
 	{
 		QWORD base    = *(QWORD*)((QWORD)dumped_module - 16);
