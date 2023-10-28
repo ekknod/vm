@@ -13,8 +13,9 @@ namespace vmwin
 		QWORD peb = vm::get_wow64_process(process);
 
 		DWORD a0[6]{};
-		QWORD a1, a2;
+		QWORD a1, a2, a4;
 		unsigned short a3[120]{};
+		char final_name[120]{};
 
 		QWORD(*read_ptr)(vm_handle process, QWORD address) = 0;
 		if (peb)
@@ -56,21 +57,35 @@ namespace vmwin
 			if (dll_name == 0)
 				return read_ptr(process, a1 + a0[4]);
 
-			QWORD a4 = read_ptr(process, a1 + a0[3]);					
+			a4 = read_ptr(process, a1 + a0[3]);
+
+			//
+			// if no module name, we skip the module
+			//
+			if (a4 == 0)
+				goto no_name;
+
+
 			vm::read(process, a4, a3, (name_length*2)+2);
 
-			char final_name[120]{};
-			for (int i = 0; i < 120; i++) {
+			
+			for (int i = 0; i < 120; i++)
+			{
 				final_name[i] = (char)a3[i];
 				if (a3[i] == 0)
+				{
 					break;
+				}
 			}
+			final_name[name_length] = 0;
 
 			if (strcmpi_imp((PCSTR)final_name, dll_name) == 0)
 			{
 				return read_ptr(process, a1 + a0[4]);
 			}
-			
+
+
+		no_name:
 			a1 = read_ptr(process, a1);
 			if (a1 == 0)
 				break;
