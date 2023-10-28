@@ -14,8 +14,7 @@ namespace vmwin
 
 		DWORD a0[6]{};
 		QWORD a1, a2, a4;
-		unsigned short a3[120]{};
-		char final_name[120]{};
+		unsigned char a3[240]{};
 
 		QWORD(*read_ptr)(vm_handle process, QWORD address) = 0;
 		if (peb)
@@ -47,48 +46,46 @@ namespace vmwin
 			return 0;
 		}
 
-		a2 = read_ptr(process, a1 + a0[0]);
+
+		//
+		// return first list entry, if parameter is null
+		//
+		if (dll_name == 0)
+			return read_ptr(process, a1 + a0[4]);
+
 
 		int name_length = (int)strlen_imp(dll_name);
 		if (name_length > 120)
 			name_length = 120;
 
-		while (a1 != a2) {
-			if (dll_name == 0)
-				return read_ptr(process, a1 + a0[4]);
 
+		a2 = read_ptr(process, a1 + a0[0]);
+		while (a1 != a2)
+		{
 			a4 = read_ptr(process, a1 + a0[3]);
 
 			//
 			// if no module name, we skip the module
 			//
 			if (a4 == 0)
-				goto no_name;
-
+			{
+				goto next_entry;
+			}
 
 			vm::read(process, a4, a3, (name_length*2)+2);
+			wcs2str((short*)a3, name_length);
+			a3[name_length] = 0;
 
-			
-			for (int i = 0; i < 120; i++)
-			{
-				final_name[i] = (char)a3[i];
-				if (a3[i] == 0)
-				{
-					break;
-				}
-			}
-			final_name[name_length] = 0;
-
-			if (strcmpi_imp((PCSTR)final_name, dll_name) == 0)
+			if (strcmpi_imp((PCSTR)a3, dll_name) == 0)
 			{
 				return read_ptr(process, a1 + a0[4]);
 			}
-
-
-		no_name:
+		next_entry:
 			a1 = read_ptr(process, a1);
 			if (a1 == 0)
+			{
 				break;
+			}
 		}
 		return 0;
 	}
@@ -97,7 +94,7 @@ namespace vmwin
 	{
 		QWORD a0;
 		DWORD a1[4]{};
-		char a2[260]{};
+		char  a2[120]{};
 
 		a0 = base + vm::read_i16(process, base + 0x3C);
 		if (a0 == base)
@@ -105,10 +102,9 @@ namespace vmwin
 			return 0;
 		}
 
-		WORD  machine = vm::read_i16(process, a0 + 0x4);
-		DWORD wow64_offset = machine == 0x8664 ? 0x88 : 0x78;
+		DWORD wow64_off = vm::read_i16(process, a0 + 0x4) == 0x8664 ? 0x88 : 0x78;
 
-		a0 = base + (QWORD)vm::read_i32(process, a0 + wow64_offset);
+		a0 = base + (QWORD)vm::read_i32(process, a0 + wow64_off);
 		if (a0 == base)
 		{
 			return 0;
@@ -122,17 +118,19 @@ namespace vmwin
 		while (a1[0]--)
 		{
 			a0 = (QWORD)vm::read_i32(process, base + a1[2] + ((QWORD)a1[0] * 4));
-			if (a0)
+			if (a0 == 0)
 			{
-				vm::read(process, base + a0, &a2, name_length);
-				a2[name_length] = 0;
+				continue;
+			}
 
-				if (!strcmpi_imp(a2, export_name))
-				{
-					DWORD tmp = vm::read_i16(process, base + a1[3] + ((QWORD)a1[0] * 2)) * 4;
-					DWORD tmp2 = vm::read_i32(process, base + a1[1] + tmp);
-					return (base + tmp2);
-				}
+			vm::read(process, base + a0, &a2, name_length);
+			a2[name_length] = 0;
+
+			if (!strcmpi_imp(a2, export_name))
+			{
+				a0 = vm::read_i16(process, base + a1[3] + ((QWORD)a1[0] * 2)) * 4;
+				a0 = vm::read_i32(process, base + a1[1] + a0);
+				return (base + a0);
 			}
 		}
 		return 0;
@@ -140,31 +138,27 @@ namespace vmwin
 
 	inline PVOID dump_module(vm_handle process, QWORD base, VM_MODULE_TYPE module_type)
 	{
-		QWORD nt_header;
-		DWORD image_size;
-		BYTE* ret;
-
 		if (base == 0)
 		{
 			return 0;
 		}
 
-		nt_header = (QWORD)vm::read_i32(process, base + 0x03C) + base;
+		QWORD nt_header = (QWORD)vm::read_i32(process, base + 0x03C) + base;
 		if (nt_header == base)
 		{
 			return 0;
 		}
 
-		image_size = vm::read_i32(process, nt_header + 0x050);
+		DWORD image_size = vm::read_i32(process, nt_header + 0x050);
 		if (image_size == 0)
 		{
 			return 0;
 		}
 
 	#ifdef _KERNEL_MODE
-		ret = (BYTE*)ExAllocatePool2(POOL_FLAG_NON_PAGED, (QWORD)(image_size + 16), 'ofnI');
+		BYTE *ret = (BYTE*)ExAllocatePool2(POOL_FLAG_NON_PAGED, (QWORD)(image_size + 16), 'ofnI');
 	#else
-		ret = (BYTE*)malloc((QWORD)image_size + 16);
+		BYTE *ret = (BYTE*)malloc((QWORD)image_size + 16);
 	#endif
 		if (ret == 0)
 			return 0;
@@ -196,7 +190,6 @@ namespace vmwin
 			DWORD virtual_size = vm::read_i32(process, section + 0x08);
 			vm::read(process, virtual_address, (PVOID)target_address, virtual_size);
 		}
-
 		return (PVOID)ret;
 	}
 

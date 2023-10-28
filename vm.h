@@ -1,6 +1,46 @@
 #ifndef VM_H
 #define VM_H
 
+#ifdef _KERNEL_MODE
+#pragma warning (disable: 4996)
+#include <ntifs.h>
+typedef unsigned __int8  BYTE;
+typedef unsigned __int16 WORD;
+typedef unsigned long DWORD;
+typedef unsigned __int64 QWORD;
+typedef int BOOL;
+
+extern QWORD g_memory_range_low;
+extern QWORD g_memory_range_high;
+#else
+
+#ifdef __linux__
+
+#include <inttypes.h>
+#include <malloc.h>
+typedef unsigned char  BYTE;
+typedef unsigned short WORD;
+typedef unsigned int DWORD;
+typedef unsigned long QWORD;
+typedef void *PVOID;
+typedef int BOOL;
+typedef char BOOLEAN;
+typedef int INT32;
+typedef const char *PCSTR;
+
+#else
+
+#include <windows.h>
+typedef unsigned __int64 QWORD;
+
+#endif
+
+
+#endif
+
+
+
+
 inline int to_lower_imp(int c)
 {
 	if (c >= 'A' && c <= 'Z')
@@ -42,43 +82,23 @@ inline unsigned long long strlen_imp(const char *str)
 	return (s - str);
 }
 
-#ifdef _KERNEL_MODE
-#pragma warning (disable: 4996)
-#include <ntifs.h>
-typedef unsigned __int8  BYTE;
-typedef unsigned __int16 WORD;
-typedef unsigned long DWORD;
-typedef unsigned __int64 QWORD;
-typedef int BOOL;
+inline unsigned long long wcslen_imp(const short *str)
+{
+	const short *s;
 
-extern QWORD g_memory_range_low;
-extern QWORD g_memory_range_high;
-#else
+	for (s = str; *s; ++s)
+		;
 
-#ifdef __linux__
+	return (s - str);
+}
 
-#include <inttypes.h>
-#include <malloc.h>
-typedef unsigned char  BYTE;
-typedef unsigned short WORD;
-typedef unsigned int DWORD;
-typedef unsigned long QWORD;
-typedef void *PVOID;
-typedef int BOOL;
-typedef char BOOLEAN;
-typedef int INT32;
-typedef const char *PCSTR;
-
-#else
-
-#include <windows.h>
-typedef unsigned __int64 QWORD;
-
-#endif
-
-
-#endif
-
+inline void wcs2str(short *buffer, int length)
+{
+	for (QWORD i = 0; i < length; i++)
+	{
+		((char*)buffer)[i] = (char)buffer[i];
+	}
+}
 
 namespace utils
 {
