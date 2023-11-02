@@ -275,14 +275,22 @@ static SOCKET socket_open(void)
 	return data_socket;
 }
 
-static BOOL socket_read(SOCKET fd, PVOID buffer, QWORD length)
+static QWORD socket_read(SOCKET fd, PVOID buffer, QWORD length)
 {
+	#ifdef __linux__
+	return recv(fd, (char *)buffer, (int)length, MSG_WAITALL);
+	#else
 	return recv(fd, (char *)buffer, (int)length, 0);
+	#endif
 }
 
-static void socket_write(SOCKET fd, PVOID buffer, QWORD length)
+static QWORD socket_write(SOCKET fd, PVOID buffer, QWORD length)
 {
-	send(fd, (const char*)buffer, (int)length, 0);
+#ifdef __linux__
+	return write(fd, buffer, length);
+#else
+	return send(fd, (const char*)buffer, (int)length, 0);
+#endif
 }
 
 #ifdef __linux__
@@ -344,12 +352,18 @@ namespace client
 			packet.size = (DWORD)length;
 			socket_write(fd, &packet, sizeof(packet));
 
-			unsigned char status = 0;
-			socket_read(fd, &status, 1);
+			BOOLEAN status=0;
+			if (socket_read(fd, &status, sizeof(status)) != sizeof(status))
+			{
+				return 0;
+			}
 
-			if (status)
-				socket_read(fd, buffer, length);
-			return status;
+			if (status == 0)
+			{
+				return 0;
+			}
+
+			return socket_read(fd, buffer, length) == length;
 		}
 
 		BOOL write(SOCKET fd, QWORD address, PVOID buffer, QWORD length)
@@ -384,7 +398,7 @@ namespace client
 	{
 		QWORD get_physical_address(SOCKET fd, QWORD cr3, QWORD virtual_address)
 		{
-			SERVER_VIRT2PHYS packet;
+			SERVER_VIRT2PHYS packet{};
 			packet.header.ioctl = IOCTL_VIRT2PHYS;
 			packet.cr3 = cr3;
 			packet.virtual_address = virtual_address;
@@ -398,19 +412,24 @@ namespace client
 
 		BOOL read(SOCKET fd, QWORD cr3, QWORD address, PVOID buffer, QWORD length)
 		{
-			SERVER_READWRITEVIRT packet;
+			SERVER_READWRITEVIRT packet{};
 			packet.header.ioctl = IOCTL_READVIRT;
 			packet.cr3 = cr3;
 			packet.address = address;
 			packet.size = (DWORD)length;
 			socket_write(fd, &packet, sizeof(packet));
 
-			unsigned char status = 0;
-			socket_read(fd, &status, 1);
+			BOOLEAN status=0;
+			if (socket_read(fd, &status, sizeof(status)) != sizeof(status))
+			{
+				return 0;
+			}
 
-			if (status)
-				socket_read(fd, buffer, length);
-			return status;
+			if (status == 0)
+			{
+				return 0;
+			}
+			return socket_read(fd, buffer, length) == length;
 		}
 
 		BOOL write(SOCKET fd, QWORD cr3, QWORD address, PVOID buffer, QWORD length)
@@ -492,7 +511,6 @@ static BOOL vm::initialize(void)
 		fd = 0;
 		return 0;
 	}
-
 
 	struct _vm_handle process{};
 	process.cr3 = cr3;

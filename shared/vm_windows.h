@@ -8,6 +8,7 @@
 //
 namespace vmwin
 {
+	inline QWORD read_i32w(vm_handle process, QWORD address) { return (QWORD)vm::read_i32(process, address); }
 	inline QWORD get_module(vm_handle process, PCSTR dll_name)
 	{
 		QWORD peb = vm::get_wow64_process(process);
@@ -19,12 +20,12 @@ namespace vmwin
 		QWORD(*read_ptr)(vm_handle process, QWORD address) = 0;
 		if (peb)
 		{
-			*(QWORD*)&read_ptr = (QWORD)vm::read_i32;
+			read_ptr = read_i32w;
 			a0[0] = 0x04, a0[1] = 0x0C, a0[2] = 0x14, a0[3] = 0x28, a0[4] = 0x10, a0[5] = 0x20;
 		}
 		else
 		{
-			*(QWORD*)&read_ptr = (QWORD)vm::read_i64;
+			read_ptr = vm::read_i64;
 			peb = vm::get_peb(process);
 			a0[0] = 0x08, a0[1] = 0x18, a0[2] = 0x20, a0[3] = 0x50, a0[4] = 0x20, a0[5] = 0x40;
 		}

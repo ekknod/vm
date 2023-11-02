@@ -92,7 +92,7 @@ inline unsigned long long wcslen_imp(const short *str)
 	return (s - str);
 }
 
-inline void wcs2str(short *buffer, int length)
+inline void wcs2str(short *buffer, QWORD length)
 {
 	for (QWORD i = 0; i < length; i++)
 	{
