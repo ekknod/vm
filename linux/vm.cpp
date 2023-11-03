@@ -1,4 +1,4 @@
-#include "../vm/shared/vm_linux.h"
+#include "../shared/vm_linux.h"
 #include <stdio.h>
 #include <dirent.h>
 #include <unistd.h>
