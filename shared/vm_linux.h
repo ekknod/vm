@@ -2,6 +2,8 @@
 #define VM_LINUX_H
 
 #include "../vm.h"
+#include <elf.h>
+#include <byteswap.h>
 
 //
 // wmwin is private header used by vm.cpp only
@@ -113,9 +115,7 @@ namespace vmlinux
 		return 0;
 	}
 
-	#include <elf.h>
-	#include <byteswap.h>
-	inline PVOID vm::dump_module(vm_handle process, QWORD base, VM_MODULE_TYPE module_type)
+	inline PVOID dump_module(vm_handle process, QWORD base, VM_MODULE_TYPE module_type)
 	{
 		Elf64_Ehdr ehdr;
 		vm::read(process, base, &ehdr, sizeof(ehdr));
