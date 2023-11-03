@@ -2,6 +2,7 @@
 #define VM_WINDOWS_H
 
 #include "../vm.h"
+
 //
 // wmwin is private header used by vm.cpp only
 //
@@ -55,8 +56,8 @@ namespace vmwin
 
 
 		int name_length = (int)strlen_imp(dll_name);
-		if (name_length > 119)
-			name_length = 119;
+		if (name_length > 120)
+			name_length = 120;
 
 
 		a2 = read_ptr(process, a1 + a0[0]);
@@ -73,8 +74,8 @@ namespace vmwin
 			}
 
 			vm::read(process, a4, a3, (name_length*2)+2);
-			wcs2str((short*)a3, name_length+1);
-			a3[name_length+1] = 0;
+			wcs2str((short*)a3, name_length);
+			a3[name_length] = 0;
 
 			if (strcmpi_imp((PCSTR)a3, dll_name) == 0)
 			{
@@ -111,8 +112,8 @@ namespace vmwin
 		}
 
 		int name_length = (int)strlen_imp(export_name);
-		if (name_length > 119)
-			name_length = 119;
+		if (name_length > 120)
+			name_length = 120;
 
 		vm::read(process, a0 + 0x18, &a1, sizeof(a1));
 		while (a1[0]--)
@@ -123,8 +124,8 @@ namespace vmwin
 				continue;
 			}
 
-			vm::read(process, base + a0, &a2, name_length + 1);
-			a2[name_length + 1] = 0;
+			vm::read(process, base + a0, &a2, name_length);
+			a2[name_length] = 0;
 
 			if (!strcmpi_imp(a2, export_name))
 			{
@@ -178,22 +179,11 @@ namespace vmwin
 
 		for (WORD i = 0; i < vm::read_i16(process, nt_header + 0x06); i++) {
 			QWORD section = section_header + ((QWORD)i * 40);
-
 			if (module_type == VM_MODULE_TYPE::CodeSectionsOnly)
 			{
 				DWORD section_characteristics = vm::read_i32(process, section + 0x24);
 				if (!(section_characteristics & 0x00000020))
 					continue;
-			}
-
-			else if (module_type == VM_MODULE_TYPE::rdata)
-			{
-				BYTE  Name[8];
-				vm::read(process, section, (PVOID)Name, sizeof(Name));
-				if (strcmpi_imp((const char *)Name, ".rdata"))
-				{
-					continue;
-				}
 			}
 
 			QWORD target_address = (QWORD)ret + (QWORD)vm::read_i32(process, section + ((module_type == VM_MODULE_TYPE::Raw) ? 0x14 : 0x0C));
@@ -202,48 +192,6 @@ namespace vmwin
 			vm::read(process, virtual_address, (PVOID)target_address, virtual_size);
 		}
 		return (PVOID)ret;
-	}
-
-	QWORD get_dump_export(PVOID dumped_module, PCSTR export_name)
-	{
-		QWORD a0;
-		DWORD a1[4]{};
-
-
-		QWORD base = (QWORD)dumped_module;
-
-
-		a0 = base + *(WORD*)(base + 0x3C);
-		if (a0 == base)
-		{
-			return 0;
-		}
-
-		DWORD wow64_off = *(WORD*)(a0 + 0x4) == 0x8664 ? 0x88 : 0x78;
-
-		a0 = base + (QWORD)*(DWORD*)(a0 + wow64_off);
-		if (a0 == base)
-		{
-			return 0;
-		}
-
-		memcpy(&a1, (const void *)(a0 + 0x18), sizeof(a1));
-		while (a1[0]--)
-		{
-			a0 = (QWORD)*(DWORD*)(base + a1[2] + ((QWORD)a1[0] * 4));
-			if (a0 == 0)
-			{
-				continue;
-			}
-
-			if (!strcmpi_imp((const char*)(base + a0), export_name))
-			{
-				a0 = *(WORD*)(base + a1[3] + ((QWORD)a1[0] * 2)) * 4;
-				a0 = *(DWORD*)(base + a1[1] + a0);
-				return (*(QWORD*)((QWORD)dumped_module - 16) + a0);
-			}
-		}
-		return 0;
 	}
 
 	inline void free_module(PVOID dumped_module)

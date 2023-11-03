@@ -229,11 +229,6 @@ void vm::free_module(PVOID dumped_module)
 	return vmwin::free_module(dumped_module);
 }
 
-QWORD vm::get_dump_export(PVOID dumped_module, PCSTR export_name)
-{
-	return vmwin::get_dump_export(dumped_module, export_name);
-}
-
 QWORD vm::scan_pattern(PVOID dumped_module, PCSTR pattern, PCSTR mask, QWORD length)
 {
 	return vmwin::scan_pattern(dumped_module, pattern, mask, length);
