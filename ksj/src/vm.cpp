@@ -229,6 +229,11 @@ void vm::free_module(PVOID dumped_module)
 	return vmwin::free_module(dumped_module);
 }
 
+QWORD vm::get_dump_export(PVOID dumped_module, PCSTR export_name)
+{
+	return vmwin::get_dump_export(dumped_module, export_name);
+}
+
 QWORD vm::scan_pattern(PVOID dumped_module, PCSTR pattern, PCSTR mask, QWORD length)
 {
 	return vmwin::scan_pattern(dumped_module, pattern, mask, length);
@@ -507,6 +512,7 @@ static BOOL vm::initialize(void)
 
 	if (cr3 == 0 || ntoskrnl == 0)
 	{
+	E0:
 		socket_close(fd);
 		fd = 0;
 		return 0;
@@ -515,15 +521,21 @@ static BOOL vm::initialize(void)
 	struct _vm_handle process{};
 	process.cr3 = cr3;
 
+	PVOID ntoskrnl_dump = vm::dump_module(&process, ntoskrnl, VM_MODULE_TYPE::ReadOnly);
+	if (ntoskrnl_dump == 0)
+	{
+		goto E0;
+	}
+
 	QWORD PsGetProcessId,PsGetProcessExitProcessCalled,PsGetProcessImageFileName,PsGetProcessWow64Process,PsGetProcessPeb;
 
-	PsInitialSystemProcess               = vm::get_module_export(&process, ntoskrnl, "PsInitialSystemProcess");
-	PsLoadedModuleList                   = vm::get_module_export(&process, ntoskrnl, "PsLoadedModuleList");
-	PsGetProcessId                       = vm::get_module_export(&process, ntoskrnl, "PsGetProcessId");
-	PsGetProcessExitProcessCalled        = vm::get_module_export(&process, ntoskrnl, "PsGetProcessExitProcessCalled");
-	PsGetProcessImageFileName            = vm::get_module_export(&process, ntoskrnl, "PsGetProcessImageFileName");
-	PsGetProcessWow64Process             = vm::get_module_export(&process, ntoskrnl, "PsGetProcessWow64Process");
-	PsGetProcessPeb                      = vm::get_module_export(&process, ntoskrnl, "PsGetProcessPeb");
+	PsInitialSystemProcess               = vm::get_dump_export(ntoskrnl_dump, "PsInitialSystemProcess");
+	PsLoadedModuleList                   = vm::get_dump_export(ntoskrnl_dump, "PsLoadedModuleList");
+	PsGetProcessId                       = vm::get_dump_export(ntoskrnl_dump, "PsGetProcessId");
+	PsGetProcessExitProcessCalled        = vm::get_dump_export(ntoskrnl_dump, "PsGetProcessExitProcessCalled");
+	PsGetProcessImageFileName            = vm::get_dump_export(ntoskrnl_dump, "PsGetProcessImageFileName");
+	PsGetProcessWow64Process             = vm::get_dump_export(ntoskrnl_dump, "PsGetProcessWow64Process");
+	PsGetProcessPeb                      = vm::get_dump_export(ntoskrnl_dump, "PsGetProcessPeb");
 
 	offset_PsGetProcessExitProcessCalled = vm::read_i32(&process, PsGetProcessExitProcessCalled + 2);
 	offset_PsGetProcessImageFileName     = vm::read_i32(&process, PsGetProcessImageFileName + 3);

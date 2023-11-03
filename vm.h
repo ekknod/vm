@@ -131,7 +131,7 @@ enum class VM_MODULE_TYPE {
 	Full = 1,
 	CodeSectionsOnly = 2,
 	Raw = 3, // used for dump to file
-	rdata = 4,
+	ReadOnly = 4,
 };
 
 enum class VmOs

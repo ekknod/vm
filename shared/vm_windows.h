@@ -186,6 +186,27 @@ namespace vmwin
 					continue;
 			}
 
+			else if (module_type == VM_MODULE_TYPE::ReadOnly)
+			{
+				DWORD section_characteristics = vm::read_i32(process, section + 0x24);
+				if (!(section_characteristics & 0x40000000)) // IMAGE_SCN_MEM_READ
+				{
+					continue;
+				}
+				if ((section_characteristics & 0x80000000)) // IMAGE_SCN_MEM_WRITE
+				{
+					continue;
+				}
+				if ((section_characteristics & 0x20000000)) // IMAGE_SCN_MEM_EXECUTE
+				{
+					continue;
+				}
+				if ((section_characteristics & 0x02000000)) // IMAGE_SCN_MEM_DISCARDABLE
+				{
+					continue;
+				}
+			}
+
 			QWORD target_address = (QWORD)ret + (QWORD)vm::read_i32(process, section + ((module_type == VM_MODULE_TYPE::Raw) ? 0x14 : 0x0C));
 			QWORD virtual_address = base + (QWORD)vm::read_i32(process, section + 0x0C);
 			DWORD virtual_size = vm::read_i32(process, section + 0x08);
@@ -204,6 +225,48 @@ namespace vmwin
 	#else
 		free((void*)a0);
 	#endif
+	}
+
+	inline QWORD get_dump_export(PVOID dumped_module, PCSTR export_name)
+	{
+		QWORD a0;
+		DWORD a1[4]{};
+
+
+		QWORD base = (QWORD)dumped_module;
+
+
+		a0 = base + *(WORD*)(base + 0x3C);
+		if (a0 == base)
+		{
+			return 0;
+		}
+
+		DWORD wow64_off = *(WORD*)(a0 + 0x4) == 0x8664 ? 0x88 : 0x78;
+
+		a0 = base + (QWORD)*(DWORD*)(a0 + wow64_off);
+		if (a0 == base)
+		{
+			return 0;
+		}
+
+		memcpy(&a1, (const void *)(a0 + 0x18), sizeof(a1));
+		while (a1[0]--)
+		{
+			a0 = (QWORD)*(DWORD*)(base + a1[2] + ((QWORD)a1[0] * 4));
+			if (a0 == 0)
+			{
+				continue;
+			}
+
+			if (!strcmpi_imp((const char*)(base + a0), export_name))
+			{
+				a0 = *(WORD*)(base + a1[3] + ((QWORD)a1[0] * 2)) * 4;
+				a0 = *(DWORD*)(base + a1[1] + a0);
+				return (*(QWORD*)((QWORD)dumped_module - 16) + a0);
+			}
+		}
+		return 0;
 	}
 
 	inline QWORD scan_pattern(PVOID dumped_module, PCSTR pattern, PCSTR mask, QWORD length)
