@@ -130,7 +130,8 @@ typedef void* vm_handle;
 enum class VM_MODULE_TYPE {
 	Full = 1,
 	CodeSectionsOnly = 2,
-	Raw = 3 // used for dump to file
+	Raw = 3, // used for dump to file
+	rdata = 4,
 };
 
 enum class VmOs
@@ -170,6 +171,8 @@ namespace vm
 
 	PVOID     dump_module(vm_handle process, QWORD base, VM_MODULE_TYPE module_type);
 	void      free_module(PVOID dumped_module);
+
+	QWORD     get_dump_export(PVOID dumped_module, PCSTR export_name);
 	
 
 	QWORD     scan_pattern(PVOID dumped_module, PCSTR pattern, PCSTR mask, QWORD length);
