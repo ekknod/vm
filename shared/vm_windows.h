@@ -56,8 +56,8 @@ namespace vmwin
 
 
 		int name_length = (int)strlen_imp(dll_name);
-		if (name_length > 120)
-			name_length = 120;
+		if (name_length > 119)
+			name_length = 119;
 
 
 		a2 = read_ptr(process, a1 + a0[0]);
@@ -74,8 +74,8 @@ namespace vmwin
 			}
 
 			vm::read(process, a4, a3, (name_length*2)+2);
-			wcs2str((short*)a3, name_length);
-			a3[name_length] = 0;
+			wcs2str((short*)a3, name_length+1);
+			a3[name_length+1] = 0;
 
 			if (strcmpi_imp((PCSTR)a3, dll_name) == 0)
 			{
@@ -112,8 +112,8 @@ namespace vmwin
 		}
 
 		int name_length = (int)strlen_imp(export_name);
-		if (name_length > 120)
-			name_length = 120;
+		if (name_length > 119)
+			name_length = 119;
 
 		vm::read(process, a0 + 0x18, &a1, sizeof(a1));
 		while (a1[0]--)
@@ -124,8 +124,8 @@ namespace vmwin
 				continue;
 			}
 
-			vm::read(process, base + a0, &a2, name_length);
-			a2[name_length] = 0;
+			vm::read(process, base + a0, &a2, name_length + 1);
+			a2[name_length + 1] = 0;
 
 			if (!strcmpi_imp(a2, export_name))
 			{
