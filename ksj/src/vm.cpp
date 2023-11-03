@@ -537,6 +537,8 @@ static BOOL vm::initialize(void)
 	PsGetProcessWow64Process             = vm::get_dump_export(ntoskrnl_dump, "PsGetProcessWow64Process");
 	PsGetProcessPeb                      = vm::get_dump_export(ntoskrnl_dump, "PsGetProcessPeb");
 
+	vm::free_module(ntoskrnl_dump);
+
 	offset_PsGetProcessExitProcessCalled = vm::read_i32(&process, PsGetProcessExitProcessCalled + 2);
 	offset_PsGetProcessImageFileName     = vm::read_i32(&process, PsGetProcessImageFileName + 3);
 	offset_ActiveProcessLinks            = vm::read_i32(&process, PsGetProcessId + 3) + 8;
