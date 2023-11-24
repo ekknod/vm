@@ -157,7 +157,7 @@ namespace vmwin
 		}
 
 	#ifdef _KERNEL_MODE
-		BYTE *ret = (BYTE*)ExAllocatePool2(POOL_FLAG_NON_PAGED, (QWORD)(image_size + 16), 'ofnI');
+		BYTE *ret = (BYTE*)ExAllocatePoolWithTag(NonPagedPoolNx, (QWORD)(image_size + 16), 'ofnI');
 	#else
 		BYTE *ret = (BYTE*)malloc((QWORD)image_size + 16);
 	#endif
