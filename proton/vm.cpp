@@ -1,10 +1,10 @@
-#include "../shared/vm_windows.h"
 #include <stdio.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include "../shared/vm_windows.h"
 
 int get_process_id(const char *process_name)
 {
