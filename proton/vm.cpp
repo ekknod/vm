@@ -175,7 +175,7 @@ vm_handle vm::open_process(PCSTR process_name)
 	//
 	// we don't care about process_name really
 	//
-	int pid = get_process_id2("wine64-preloader", "easyanticheat_x64.dll"); // get_process_id(process_name);
+	int pid = get_process_id2("wine64-preloader", "EOSSDK-Win64-Shipping.dll"); // get_process_id(process_name);
 	if (pid == 0)
 	{
 		return 0;
@@ -199,7 +199,7 @@ vm_handle vm::open_process(PCSTR process_name)
 
 vm_handle vm::open_process_ex(PCSTR process_name, PCSTR dll_name)
 {
-	int pid = get_process_id2("wine64-preloader", "easyanticheat_x64.dll"); // get_process_id(process_name);
+	int pid = get_process_id2("wine64-preloader", "EOSSDK-Win64-Shipping.dll"); // get_process_id(process_name);
 
 	if (pid == 0)
 	{
